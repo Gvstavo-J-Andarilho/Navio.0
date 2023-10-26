@@ -1,8 +1,7 @@
-# Maracutaia
-
 import pygame
 import sys
 import random
+import pygame.font
 
 # Configuração inicial
 pygame.init()
@@ -16,6 +15,12 @@ pygame.display.set_caption("Jogo de Combinação de Navios e Portos")
 # Cores
 branco = (255, 255, 255)
 preto = (0, 0, 0)
+vermelho = (255, 0, 0)
+
+#fonte da contagem regressiva
+tempo_inicial = 8000  # Tempo inicial em segundos
+tempo_corrente = tempo_inicial
+fonte_contagem = pygame.font.Font(None, 36)
 
 # Variáveis globais
 pontos = 0
@@ -124,7 +129,7 @@ def criar_navio():
 # Loop Principal do Jogo
 tempo_navio = 0
 tempo_espera_porto = 0
-tempo_validade_carga = 500  # Tempo para validade da carga em frames
+tempo_validade_carga = 1000  # Tempo para validade da carga em frames
 
 # Iniciar o jogo
 criar_portos()
@@ -153,7 +158,8 @@ while True:
                                 navio.descarregado = False  # Defina o status do navio como não descarregado
                                 navios_em_porto.add(navio)
                                 navios_esperando.remove(navio)
-
+    #contagem regressiva
+    tempo_corrente -= 1
     if not navios_esperando:
         # Se não houver navios esperando, crie um novo navio
         tempo_navio += 1
@@ -187,12 +193,26 @@ while True:
                 navios_em_porto.remove(navio)
                 # Define o status do navio como descarregado para que ele não seja processado novamente
                 navio.descarregado = True
+                if navio.descarregado:
+                    tempo_espera_porto=0
 
-    # Renderizar
+    
+
+    # Renderizar---------------------------------------------------------
     janela.fill(preto)
     navios_esperando.draw(janela)
     navios_em_porto.draw(janela)
     portos.draw(janela)
+   
+    # Contador de tempo de carga:
+    tempo_restante = tempo_validade_carga - tempo_espera_porto
+    fonte = pygame.font.Font(None, 36)
+    texto_tempo = fonte.render(f"Tempo Restante: {tempo_restante}", True, vermelho)
+    janela.blit(texto_tempo, (10, 50))  # Posição onde o texto será exibido
+    
+    # Renderize a contagem regressiva na parte superior direita da tela:
+    texto_contagem = fonte_contagem.render(f"Tempo: {tempo_corrente/1000}s", True, branco)
+    janela.blit(texto_contagem, (largura - 200, 10))
 
     # Exibir pontos na tela
     fonte = pygame.font.Font(None, 36)
@@ -200,4 +220,3 @@ while True:
     janela.blit(texto_pontos, (10, 10))
 
     pygame.display.flip()
-
