@@ -24,6 +24,7 @@ fonte_contagem = pygame.font.Font(None, 36)
 
 # Variáveis globais-------------------------------------------------------------------------------------------
 pontos = 0
+contador = 0
 tempo_espera_navio = 100  # Tempo de espera entre a criação de novos navios (em frames)
 tempo_descarga = 300  # Tempo de descarga em frames
 
@@ -122,17 +123,30 @@ def criar_portos():
 # Função para criar um novo navio na fila
 def criar_navio():
     for i in range(3):
-        x_navio = random.randint(50, largura - 50)
-        y_navio = 50  # Mantenha os navios na parte superior da tela
-        novo_navio = Navio(x_navio, y_navio)
+        # Gere coordenadas iniciais para o novo navio
+        while True:
+            x_navio = random.randint(50, largura - 50)
+            y_navio = 50
+            novo_navio = Navio(x_navio, y_navio)
+
+            # Verifique a colisão com outros navios
+            colide_com_outro_navio = False
+            for navio_existente in navios_esperando:
+                if novo_navio.rect.colliderect(navio_existente.rect):
+                    colide_com_outro_navio = True
+                    break
+
+            # Verifique se o navio ultrapassa os limites da tela
+            if (novo_navio.rect.right <= largura) and (novo_navio.rect.bottom <= altura) and (not colide_com_outro_navio):
+                break
+
         navios_esperando.add(novo_navio)
-        tempo_adicionado = False
 
 # Loop Principal do Jogo
 tempo_navio = 0
 tempo_espera_porto = 0
 tempo_validade_carga = 1000  # Tempo para validade da carga em frames
-tempo_adicionado= False
+
 
 # Iniciar o jogo
 criar_portos()
@@ -148,9 +162,6 @@ while True:
                     if navio.rect.collidepoint(evento.pos):
                         #global tempo_adicionado
                         navio.iniciar_arraste(evento.pos)
-                        if not tempo_adicionado:
-                            tempo_corrente += 1000  # Adicione 1 segundo ao tempo corrente
-                            tempo_adicionado = True  # Marque o tempo como adicionado
         elif evento.type == pygame.MOUSEBUTTONUP:
             if evento.button == 1:
                 for navio in navios_esperando:
@@ -160,14 +171,15 @@ while True:
                             if porto.rect.collidepoint(evento.pos):
                                 # Verificar se o navio foi solto sobre um porto válido
                                 pontos += 1
+                                bonificacao = 1000  # Bonificação fixa de 1 segundo por ponto
+                                tempo_corrente += bonificacao
                                 navio.rect.x = porto.rect.x + 10  # Ajuste a posição para o centro do berço
                                 navio.rect.y = porto.rect.y - 20
                                 navio.descarregado = False  # Defina o status do navio como não descarregado
                                 navios_em_porto.add(navio)
                                 navios_esperando.remove(navio)
-                                #tempo_adicional=1000 #teste
     #contagem regressiva
-    tempo_corrente -=1
+    tempo_corrente -= 1
 
 
     if not navios_esperando:# Se não houver navios esperando, crie um novo navio
