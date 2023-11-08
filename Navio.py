@@ -1,14 +1,12 @@
 import pygame
 import sys
 import random
-import pygame.font
 
-# Configuração inicial-------------------------------------------------------------
+# Configuração inicial
 pygame.init()
 
-# Configuração de janela do jogo
-largura = 1266
-altura = 568
+# Configuração da janela do jogo
+largura, altura = 1266, 568
 janela = pygame.display.set_mode((largura, altura))
 pygame.display.set_caption("Jogo de Combinação de Navios e Portos")
 
@@ -17,38 +15,31 @@ branco = (255, 255, 255)
 preto = (0, 0, 0)
 vermelho = (255, 0, 0)
 
-#fonte da contagem regressiva
-tempo_inicial = 8000  # Tempo inicial em segundos
+# Variáveis de tempo
+tempo_inicial = 8000
 tempo_corrente = tempo_inicial
-fonte_contagem = pygame.font.Font(None, 36)
+tempo_espera_porto = 0
+tempo_validade_carga = 8000
+decrescente_validade_carga = tempo_validade_carga
 
-# Variáveis globais-------------------------------------------------------------------------------------------
+# Outras variáveis
 pontos = 0
-contador = 0
-tempo_espera_navio = 100  # Tempo de espera entre a criação de novos navios (em frames)
-tempo_descarga = 300  # Tempo de descarga em frames
 
-
-# Tipos de navios com diferentes tempos de descarregamento----------------------------------------------------
 tipos_de_navios = [
-    {"imagem": pygame.image.load("navio1.png"), "tempo_descarga": 3},
-    {"imagem": pygame.image.load("navio2.png"), "tempo_descarga": 5},
-    {"imagem": pygame.image.load("navio3.png"), "tempo_descarga": 2},
+    {"imagem": pygame.image.load("C:/Users/Gustavo/PycharmProjects/Navio/JogoNavio/navio1.png"), "tempo_descarga": 1},
+    {"imagem": pygame.image.load("C:/Users/Gustavo/PycharmProjects/Navio/JogoNavio/navio2.png"), "tempo_descarga": 2},
+    {"imagem": pygame.image.load("C:/Users/Gustavo/PycharmProjects/Navio/JogoNavio/navio3.png"), "tempo_descarga": 3},
+    {"imagem": pygame.image.load("C:/Users/Gustavo/PycharmProjects/Navio/JogoNavio/navio4.png"), "tempo_descarga": 4}
 ]
-
-# Adicionar um novo tipo de navio
-novo_tipo_navio = {"imagem": pygame.image.load("navio4.png"), "tempo_descarga": 4}
-tipos_de_navios.append(novo_tipo_navio)
-
-# Eficácia dos berços (tempo multiplicador)
+# Eficácia dos berços
 eficacia_bercos = {
-    "Berço A": 0.75,
-    "Berço B": 0.85,
+    "Berço A": 0.5,
+    "Berço B": 0.75,
     "Berço C": 1.2,
-    "Berco D": 1.5
+    "Berço D": 2
 }
 
-# Classe Navio, isso diz o que ele faz, as caracteristicas e o que é o objeto:
+# Classe Navio
 class Navio(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
@@ -77,76 +68,33 @@ class Navio(pygame.sprite.Sprite):
     def parar_arraste(self):
         self.arrastando = False
 
-# Classe PortoA: caracteristicas, nome, altura, e carregamento do sprite
-class PortoA(pygame.sprite.Sprite):
-    def __init__(self, x):
+# Classes dos Portos
+class Porto(pygame.sprite.Sprite):
+    def __init__(self, x, nome, imagem):
         super().__init__()
-        self.image = pygame.image.load("porto1.png")  # Imagem específica para Berço A
+        self.image = imagem
         self.rect = self.image.get_rect()
         self.rect.x = x
-        self.rect.y = altura - 500  # Mantenha os portos na parte inferior da tela
-        self.nome = "Berço A"
+        self.rect.y = altura - 500
+        self.nome = nome
 
-# Classe PortoB
-class PortoB(pygame.sprite.Sprite):
-    def __init__(self, x):
-        super().__init__()
-        self.image = pygame.image.load("porto2.png")  # Imagem específica para Berço B
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = altura - 500  # Mantenha os portos na parte inferior da tela
-        self.nome = "Berço B"
-
-# Classe PortoC
-class PortoC(pygame.sprite.Sprite):
-    def __init__(self, x):
-        super().__init__()
-        self.image = pygame.image.load("porto3.png")  # Imagem específica para Berço C
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = altura - 500  # Mantenha os portos na parte inferior da tela
-        self.nome = "Berço C"
-# Classe PortoD
-class PortoD(pygame.sprite.Sprite):
-    def __init__(self, x):
-        super().__init__()
-        self.image = pygame.image.load("porto4.png")  # Imagem específica para Berço D
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = altura - 500  # Mantenha os portos na parte inferior da tela
-        self.nome = "Berço D"
-
-# Inicializar os grupos de sprites
+# Inicialização dos grupos de sprites
 navios_esperando = pygame.sprite.Group()
 navios_em_porto = pygame.sprite.Group()
 portos = pygame.sprite.Group()
-
 
 # Função para criar portos
 def criar_portos():
     nomes_portos = ["Berço A", "Berço B", "Berço C", "Berço D"]
     espaco_entre_portos = largura // (len(nomes_portos) + 1)
     for i, nome in enumerate(nomes_portos):
-        x_porto = (i + 1) * espaco_entre_portos - 25  # Ajuste a posição do porto para o centro
-        if nome == "Berço A":
-            porto = PortoA(x_porto)
-        elif nome == "Berço B":
-            porto = PortoB(x_porto)
-        elif nome == "Berço C":
-            porto = PortoC(x_porto)
-        elif nome == "Berço D":
-            porto = PortoD(x_porto)
-
+        x_porto = (i + 1) * espaco_entre_portos - 25
+        imagem_porto = pygame.image.load(f"porto{i + 1}.png")
+        porto = Porto(x_porto, nome, imagem_porto)
         portos.add(porto)
-
-#movimento dos navios
-y_chegada = 600
-navio_group = pygame.sprite.Group()
-
 def Movimentar_Navios():
     global x_chegada, y_chegada
-    for i, navio in enumerate(tipos_de_navios):
-        # Use o operador de módulo para garantir que o índice esteja dentro dos limites da lista destino
+    for i, navio in enumerate(navios_esperando):
         i = i % len(destino)
         destino_x, destino_y = destino[i]
 
@@ -156,75 +104,80 @@ def Movimentar_Navios():
         distancia = ((dx ** 2) + (dy ** 2)) ** 0.5
 
         if distancia > 0:
-            # Calcule a quantidade a ser movida nesta iteração
             move_x = dx / distancia * navio_velocidade
             move_y = dy / distancia * navio_velocidade
 
-            # Atualize a posição do navio
             x_chegada[i] = atual_x + move_x
             y_chegada = atual_y + move_y
 
-            # Verifique a colisão com o berço atual e desative o movimento se houver colisão
-            for berco in [PortoA, PortoB, PortoC, PortoD]:
-                if navio.rect.colliderect(berco.rect):
-                    # O navio colidiu com o berço, desative o movimento
+            for porto in portos:
+                if navio.rect.colliderect(porto.rect):
                     return True
-
             navio.rect.center = (x_chegada[i], y_chegada)
 
     return None
 
-destino = [(100, 450), (300, 450), (500, 450), (700, 450)]
+
+#variáveis para criação e movimentação dos navios
+destino = [(228, 450), (481, 450), (734, 450), (986, 450)] #coordenadas de x dos portos
 x_chegada = [destino_x for destino_x, _ in destino]
-origem = [(850, 600), (1050, 600), (1250, 600), (1450, 600)]
+origem = [(largura-300, 450), (largura-250, 450), (largura-200, 450), (largura-150, 450)]
 navio_velocidade = 2
+# Função para repor as posições disponíveis
+def repor_posicoes_disponiveis():
+    global posicoes_disponiveis
+    posicoes_disponiveis = origem.copy()
 
+# Função para criar um novo navio
 posicoes_disponiveis = origem.copy()
+# Criar portos
+criar_portos()
+tempo_para_novo_navio = 1  # Ajuste esse valor para controlar a frequência de criação
+# Função para criar um novo navio
+posicoes_disponiveis = origem.copy()
+tempo_para_nova_geracao = 300  # Intervalo de tempo para criar uma nova geração de navios
+tempo_para_novo_navio = tempo_para_nova_geracao  # Inicializa o temporizador
 
+# Função para criar um novo navio
+# Função para criar um novo navio
+def criar_navios():
+    global tempo_para_novo_navio
 
-# Função para criar um novo navio na fila
-def criar_navio():
-    for i in range(4):
-        # Gere coordenadas iniciais para o novo navio
-        while True:
-            x_navio = random.randint(50, largura - 50)
-            y_navio = altura - 150
-            novo_navio = Navio(x_navio, y_navio)
+    if tempo_para_novo_navio <= 0:
+        if not posicoes_disponiveis:
+            repor_posicoes_disponiveis()
+        numero_de_navios = random.randint(1, min(4, len(posicoes_disponiveis)))  # Gera entre 1 e 4 navios ou o número de posições disponíveis
+        for _ in range(numero_de_navios):
+            x, y = random.choice(posicoes_disponiveis)
+            cargo = random.choice(tipos_de_navios)
+            novo_navio = Navio(x, y)
 
-            # Verifique a colisão com outros navios
-            colide_com_outro_navio = False
+            # Verifique se o novo navio colide com outros navios
+            colide = False
             for navio_existente in navios_esperando:
                 if novo_navio.rect.colliderect(navio_existente.rect):
-                    colide_com_outro_navio = True
+                    colide = True
                     break
 
-            # Verifique se o navio ultrapassa os limites da tela
-            if (novo_navio.rect.right <= largura) and (novo_navio.rect.bottom <= altura) and (not colide_com_outro_navio):
-                break
+            # Se não houver colisão, adicione o novo navio
+            if not colide:
+                navios_esperando.add(novo_navio)
+                if (x, y) in posicoes_disponiveis:
+                    posicoes_disponiveis.remove((x, y))
 
-        navios_esperando.add(novo_navio)
-
-# Tempos dos jogo
-tempo_navio = 500
-tempo_espera_porto = 3000
-tempo_validade_carga = 5000  # Tempo para validade da carga em frames
-decrescente_validade_carga = tempo_validade_carga
-
+        tempo_para_novo_navio = tempo_para_nova_geracao  # Redefina o temporizador
+    tempo_para_novo_navio -= 1
 
 # Loop Principal do Jogo
-
-criar_portos()
-
-while True: # Iniciar o jogo
+while True:
     for evento in pygame.event.get():
         if evento.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
         elif evento.type == pygame.MOUSEBUTTONDOWN:
-            if evento.button == 1:  # Verificar clique do botão esquerdo do mouse
+            if evento.button == 1:
                 for navio in navios_esperando:
                     if navio.rect.collidepoint(evento.pos):
-                        #global tempo_adicionado
                         navio.iniciar_arraste(evento.pos)
         elif evento.type == pygame.MOUSEBUTTONUP:
             if evento.button == 1:
@@ -233,34 +186,33 @@ while True: # Iniciar o jogo
                         navio.parar_arraste()
                         for porto in portos:
                             if porto.rect.collidepoint(evento.pos):
-                                # Verificar se o navio foi solto sobre um porto válido
                                 pontos += 1
-                                bonificacao = 1000  # Bonificação fixa de 1 segundo por ponto
+                                bonificacao = 1000
                                 tempo_corrente += bonificacao
                                 decrescente_validade_carga += bonificacao
-                                navio.rect.x = porto.rect.x + 10  # Ajuste a posição para o centro do berço
+                                navio.rect.x = porto.rect.x + 10
                                 navio.rect.y = porto.rect.y - 20
-                                navio.descarregado = False  # Defina o status do navio como não descarregado
+                                navio.descarregado = False
                                 navios_em_porto.add(navio)
                                 navios_esperando.remove(navio)
-    #contagem regressiva
+
     tempo_corrente -= 1
+    decrescente_validade_carga -= 1
 
-    decrescente_validade_carga-=1
+    # Controle da criação de novos navios
+    criar_navios()  # Crie um novo navio
 
+    tempo_corrente -= 1
+    Movimentar_Navios()
+    decrescente_validade_carga -= 1
+    Movimentar_Navios()
 
-
-    if not navios_esperando:# Se não houver navios esperando, crie um novo navio
-        tempo_navio += 1
-        if tempo_navio >= tempo_espera_navio:
-            criar_navio()  # Crie um novo navio
-            tempo_navio = 0
-
-
-
-    # Lógica do jogo
+    if tempo_corrente <= 0:
+        pygame.quit()
+        sys.exit()
     tempo_espera_porto += 1
-    if tempo_corrente<=0:
+    if tempo_espera_porto >= tempo_validade_carga:
+        # A carga expirou
         pygame.quit()
         sys.exit()
     if decrescente_validade_carga <= 0:
@@ -300,7 +252,8 @@ while True: # Iniciar o jogo
     portos.draw(janela)
 
     # Renderize a contagem regressiva na parte superior direita da tela:
-    texto_contagem = fonte_contagem.render(f"Tempo restante: {tempo_corrente/1000}s", True, branco)
+    contagem = pygame.font.Font(None,36)
+    texto_contagem = contagem.render(f"Tempo restante: {tempo_corrente/1000}s", True, branco)
     janela.blit(texto_contagem, (largura - 300, 10))
 
     # Exibir pontos na tela
@@ -314,3 +267,12 @@ while True: # Iniciar o jogo
     janela.blit(texto_validade, (10, 50))
 
     pygame.display.flip()
+
+'''destino = aonde o navio vai parar = 
+espaco_entre_portos
+
+tela:
+	lar=1266 (x)
+	altura=568 (y)
+destino = [(228, 450), (481, 450), (734, 450), (986, 450)] #coordenadas de x dos portos
+origem = [(largura-300, 450), (largura-250, 450), (largura-200, 450), (largura-150, 450)]'''
